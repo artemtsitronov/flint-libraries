@@ -1,0 +1,478 @@
+#  Math.fl is a library for the Flint programming
+#   language by Soumalya Das.
+#  This library is part of the flint-libraries collection,
+#   and is made by Artem Tsitronov.
+
+export const floor  = __floor
+export const sqrt  = __sqrt
+export const fma  = __fma
+export const ldexp  = __ldexp
+export const copysign  = __copysign
+export const abs  = __fabs
+export const hi32 = __hi32
+export const lo32 = __lo32
+
+# --------------- constants
+
+export const math_inf = 1e308 * 10
+export const math_nan = math_inf - math_inf
+
+export const math_pi      = 3.141592653589793
+export const math_tau     = 6.283185307179586      # 2*pi
+export const math_pi_2    = 1.5707963267948966     # pi/2
+export const math_pi_4    = 0.7853981633974483     # pi/4
+export const math_1_pi    = 0.3183098861837907     # 1/pi
+export const math_2_pi    = 0.6366197723675814     # 2/pi
+
+export const math_e       = 2.718281828459045
+export const math_ln2     = 0.6931471805599453
+export const math_ln10    = 2.302585092994046
+export const math_log2e   = 1.4426950408889634     # 1/ln2
+export const math_log10e  = 0.4342944819032518     # 1/ln10
+
+export const math_sqrt2   = 1.4142135623730951
+export const math_sqrt1_2 = 0.7071067811865476     # 1/sqrt2
+
+export const math_deg2rad = 0.017453292519943295   # pi/180
+export const math_rad2deg = 57.29577951308232      # 180/pi
+
+export const math_epsilon = 2.220446049250313e-16      # gap between 1 and the next double
+export const math_max     = 1.7976931348623157e308     # largest finite double
+export const math_min     = 2.2250738585072014e-308    # smallest normal double
+export const math_tiny    = 5e-324                     # smallest subnormal double
+
+# ----------- exp
+
+const exp_overflow  =  709.782712893384
+const exp_underflow = -745.1332191019411
+const exp_tiny      =  3.725290298461914e-9    # 2^-28
+const exp_inv_ln2   =  1.4426950408889634
+const exp_ln2_hi    =  6.93147180369123816490e-01
+const exp_ln2_lo    =  1.90821492927058770002e-10
+
+const exp_p1 =  1.66666666666666019037e-01
+const exp_p2 = -2.77777777770155933842e-03
+const exp_p3 =  6.61375632143793436117e-05
+const exp_p4 = -1.65339022054652515390e-06
+const exp_p5 =  4.13813679705723846039e-08
+
+export fn exp(x) {
+    if x != x { return x }                    # NaN
+    if x > exp_overflow { return math_inf }
+    if x < exp_underflow { return 0 }
+    if abs(x) < exp_tiny { return 1 + x }
+
+    # x = k*ln2 + r,  |r| <= ln2/2
+    let k = floor(x * exp_inv_ln2 + 0.5)
+    let r = fma(-k, exp_ln2_hi, x)
+    r = fma(-k, exp_ln2_lo, r)
+
+    # exp(r) = 1 + r + r*c/(2-c)
+    let t = r * r
+    let c = r - t * (exp_p1 + t * (exp_p2 + t * (exp_p3 + t * (exp_p4 + t * exp_p5))))
+    let y = 1 + (r + (r * c) / (2 - c))
+
+    return ldexp(y, k)
+}
+
+# ----------- log
+
+const log_two54 = 18014398509481984    # 2^54, to rescale subnormals
+const log_sqrt2 = 1.4142135623730951
+const log_ln2_hi = 6.93147180369123816490e-01
+const log_ln2_lo = 1.90821492927058770002e-10
+
+const log_l1 = 6.666666666666735130e-01
+const log_l2 = 3.999999999940941908e-01
+const log_l3 = 2.857142874366239149e-01
+const log_l4 = 2.222219843214978396e-01
+const log_l5 = 1.818357216161805012e-01
+const log_l6 = 1.531383769920937332e-01
+const log_l7 = 1.479819860511658591e-01
+
+export fn log(x) {
+    if x != x { return x }               # NaN
+    if x < 0 { return math_nan }
+    if x == 0 { return -math_inf }
+    if x == math_inf { return x }
+
+    let adj = 0
+    let bexp = floor(hi32(x) / 1048576)
+    if bexp == 0 {                            # subnormal: rescale first
+        x = x * log_two54
+        adj = -54
+        bexp = floor(hi32(x) / 1048576)
+    }
+    let e = bexp - 1023
+    let m = ldexp(x, -e)                      # mantissa in [1, 2)
+    e = e + adj
+
+    if m > log_sqrt2 {                        # keep m in [0.707, 1.414]
+        m = m * 0.5
+        e = e + 1
+    }
+
+    let f = m - 1
+    let s = f / (2 + f)
+    let z = s * s
+    let w = z * z
+    let t1 = w * (log_l2 + w * (log_l4 + w * log_l6))
+    let t2 = z * (log_l1 + w * (log_l3 + w * (log_l5 + w * log_l7)))
+    let R = t2 + t1
+    let hfsq = 0.5 * f * f
+
+    return e * log_ln2_hi - ((hfsq - (s * (hfsq + R) + e * log_ln2_lo)) - f)
+}
+
+# --------------- trigonometry
+
+const trig_pio4  = 0.7853981633974483
+const trig_pio4lo = 3.06161699786838301793e-17
+const trig_max   = 1647099              # ~2^20 * pi/2, see note below
+
+const trig_invpio2 = 6.36619772367581382433e-01
+const trig_pio2_1  = 1.57079632673412561417e+00
+const trig_pio2_1t = 6.07710050650619224932e-11
+const trig_pio2_2  = 6.07710050630396597660e-11
+const trig_pio2_2t = 2.02226624879595063154e-21
+const trig_pio2_3  = 2.02226624871116645580e-21
+const trig_pio2_3t = 8.47842766036889956997e-32
+
+# sin kernel
+const trig_s1 = -1.66666666666666324348e-01
+const trig_s2 =  8.33333333332248946124e-03
+const trig_s3 = -1.98412698298579493134e-04
+const trig_s4 =  2.75573137070700676789e-06
+const trig_s5 = -2.50507602534068634195e-08
+const trig_s6 =  1.58969099521155010221e-10
+
+### cos kernel
+const trig_c1 =  4.16666666666666019037e-02
+const trig_c2 = -1.38888888888741095749e-03
+const trig_c3 =  2.48015872894767294178e-05
+const trig_c4 = -2.75573143513906633035e-07
+const trig_c5 =  2.08757232129817482790e-09
+const trig_c6 = -1.13596475577881948265e-11
+
+### tan kernel
+const trig_t0  =  3.33333333333334091986e-01
+const trig_t1  =  1.33333333333201242699e-01
+const trig_t2  =  5.39682539762260521377e-02
+const trig_t3  =  2.18694882948595424599e-02
+const trig_t4  =  8.86323982359930005737e-03
+const trig_t5  =  3.59207910759131235356e-03
+const trig_t6  =  1.45620945432529025516e-03
+const trig_t7  =  5.88041240820264096874e-04
+const trig_t8  =  2.46463134818469906812e-04
+const trig_t9  =  7.81794442939557092300e-05
+const trig_t10 =  7.14072491382608190305e-05
+const trig_t11 = -1.85586374855275456654e-05
+const trig_t12 =  2.59073051863633712884e-05
+
+### results of trig_reduce
+let trig_n = 0
+let trig_y0 = 0
+let trig_y1 = 0
+
+fn trig_bexp(v) {
+    return floor(hi32(abs(v)) / 1048576)
+}
+
+
+fn trig_reduce(x) {
+    let n = floor(x * trig_invpio2 + 0.5)
+    let r = fma(-n, trig_pio2_1, x)
+    let w = n * trig_pio2_1t
+    let y0 = r - w
+    let ex = trig_bexp(x)
+    let ey = trig_bexp(y0)
+    if ex - ey > 16 {                        # lost >16 bits: second round
+        let t = r
+        w = n * trig_pio2_2
+        r = t - w
+        w = n * trig_pio2_2t - ((t - r) - w)
+        y0 = r - w
+        ey = trig_bexp(y0)
+        if ex - ey > 49 {                    # lost >49 bits: third round
+            t = r
+            w = n * trig_pio2_3
+            r = t - w
+            w = n * trig_pio2_3t - ((t - r) - w)
+            y0 = r - w
+        }
+    }
+    trig_y0 = y0
+    trig_y1 = (r - y0) - w
+    trig_n = n
+}
+
+## sin on [-pi/4, pi/4]; y is the tail of x, iy = 0 if there is no tail
+fn trig_ksin(x, y, iy) {
+    let z = x * x
+    let w = z * z
+    let r = trig_s2 + z * (trig_s3 + z * trig_s4) + z * w * (trig_s5 + z * trig_s6)
+    let v = z * x
+    if iy == 0 { return x + v * (trig_s1 + z * r) }
+    return x - ((z * (0.5 * y - v * r) - y) - v * trig_s1)
+}
+
+fn trig_kcos(x, y) {
+    let z = x * x
+    let w = z * z
+    let r = z * (trig_c1 + z * (trig_c2 + z * trig_c3)) + w * w * (trig_c4 + z * (trig_c5 + z * trig_c6))
+    let hz = 0.5 * z
+    w = 1 - hz
+    return w + (((1 - w) - hz) + (z * r - x * y))
+}
+
+# tan on [-pi/4, pi/4]; odd = 1 returns -1/tan
+fn trig_ktan(x, y, odd) {
+    let a = x
+    let b = y
+    let big = false
+    let neg = false
+    if abs(x) >= 0.6743 {
+        big = true
+        if x < 0 {
+            neg = true
+            a = -x
+            b = -y
+        }
+        a = (trig_pio4 - a) + (trig_pio4lo - b)
+        b = 0
+    }
+    let z = a * a
+    let w = z * z
+    let r = trig_t1 + w * (trig_t3 + w * (trig_t5 + w * (trig_t7 + w * (trig_t9 + w * trig_t11))))
+    let v = z * (trig_t2 + w * (trig_t4 + w * (trig_t6 + w * (trig_t8 + w * (trig_t10 + w * trig_t12)))))
+    let s = z * a
+    r = b + z * (s * (r + v) + b) + s * trig_t0
+    w = a + r
+    if big {
+        s = 1 - 2 * odd
+        v = s - 2 * (a + (r - w * w / (w + s)))
+        if neg { return -v }
+        return v
+    }
+    if odd == 0 { return w }
+    # accurate -1/(a + r): w + v == a + r exactly, then one refinement step
+    v = r - (w - a)
+    let q = -1 / w
+    let e = fma(q, w, 1) + q * v
+    return q + q * e
+}
+
+## ---------- sin / cos / tan ----------
+
+export fn sin(x) {
+    if x != x { return x }
+    let ax = abs(x)
+    if ax < trig_pio4 {
+        if ax < 1.4901161193847656e-8 { return x }    # 2^-26
+        return trig_ksin(x, 0, 0)
+    }
+    if ax > trig_max { return math_nan }
+    trig_reduce(x)
+    let q = trig_n - 4 * floor(trig_n / 4)
+    if q == 0 { return trig_ksin(trig_y0, trig_y1, 1) }
+    if q == 1 { return trig_kcos(trig_y0, trig_y1) }
+    if q == 2 { return -trig_ksin(trig_y0, trig_y1, 1) }
+    return -trig_kcos(trig_y0, trig_y1)
+}
+
+export fn cos(x) {
+    if x != x { return x }
+    let ax = abs(x)
+    if ax < trig_pio4 { return trig_kcos(x, 0) }
+    if ax > trig_max { return math_nan }
+    trig_reduce(x)
+    let q = trig_n - 4 * floor(trig_n / 4)
+    if q == 0 { return trig_kcos(trig_y0, trig_y1) }
+    if q == 1 { return -trig_ksin(trig_y0, trig_y1, 1) }
+    if q == 2 { return -trig_kcos(trig_y0, trig_y1) }
+    return trig_ksin(trig_y0, trig_y1, 1)
+}
+
+export fn tan(x) {
+    if x != x { return x }
+    let ax = abs(x)
+    if ax < trig_pio4 {
+        if ax < 7.450580596923828e-9 { return x }     # 2^-27
+        return trig_ktan(x, 0, 0)
+    }
+    if ax > trig_max { return math_nan }
+    trig_reduce(x)
+    let q = trig_n - 2 * floor(trig_n / 2)
+    return trig_ktan(trig_y0, trig_y1, q)
+}
+
+## ---------- atan / atan2 ----------
+
+const atan_hi = [4.63647609000806093515e-01, 7.85398163397448278999e-01, 9.82793723247329054082e-01, 1.57079632679489655800e+00]
+const atan_lo = [2.26987774529616870924e-17, 3.06161699786838301793e-17, 1.39033110312309984516e-17, 6.12323399573676603587e-17]
+
+const atan_a0  =  3.33333333333329318027e-01
+const atan_a1  = -1.99999999998764832476e-01
+const atan_a2  =  1.42857142725034663711e-01
+const atan_a3  = -1.11111104054623557880e-01
+const atan_a4  =  9.09088713343650656196e-02
+const atan_a5  = -7.69187620504482999495e-02
+const atan_a6  =  6.66107313738753120669e-02
+const atan_a7  = -5.83357013379057348645e-02
+const atan_a8  =  4.97687799461593236017e-02
+const atan_a9  = -3.65315727442169155270e-02
+const atan_a10 =  1.62858201153657823623e-02
+
+export fn atan(x) {
+    if x != x { return x }
+    let ax = abs(x)
+    if ax >= 7.378697629483821e19 {                  # 2^66
+        return copysign(atan_hi[3] + atan_lo[3], x)
+    }
+    let id = -1
+    let t = x
+    if ax >= 0.4375 {
+        if ax < 1.1875 {
+            if ax < 0.6875 {
+                id = 0
+                t = (2 * ax - 1) / (2 + ax)
+            } else {
+                id = 1
+                t = (ax - 1) / (ax + 1)
+            }
+        } else {
+            if ax < 2.4375 {
+                id = 2
+                t = (ax - 1.5) / (1 + 1.5 * ax)
+            } else {
+                id = 3
+                t = -1 / ax
+            }
+        }
+    } else {
+        if ax < 7.450580596923828e-9 { return x }    # 2^-27
+    }
+    let z = t * t
+    let w = z * z
+    let s1 = z * (atan_a0 + w * (atan_a2 + w * (atan_a4 + w * (atan_a6 + w * (atan_a8 + w * atan_a10)))))
+    let s2 = w * (atan_a1 + w * (atan_a3 + w * (atan_a5 + w * (atan_a7 + w * atan_a9))))
+    if id < 0 { return t - t * (s1 + s2) }
+    let res = atan_hi[id] - ((t * (s1 + s2) - atan_lo[id]) - t)
+    if x < 0 { return -res }
+    return res
+}
+
+const atan2_pi    = 3.14159265358979311600e+00
+const atan2_pi_lo = 1.2246467991473531772e-16
+const atan2_pio2  = 1.57079632679489655800e+00
+const atan2_pio4  = 7.85398163397448278999e-01
+const atan2_3pio4 = 2.356194490192345
+
+export fn atan2(y, x) {
+    if x != x { return x + y }
+    if y != y { return x + y }
+    let sx = copysign(1, x) < 0
+    let sy = copysign(1, y) < 0
+    if y == 0 {
+        if sx { return copysign(atan2_pi, y) }
+        return y
+    }
+    if x == 0 { return copysign(atan2_pio2, y) }
+    let ax = abs(x)
+    let ay = abs(y)
+    if ax == math_inf {
+        if ay == math_inf {
+            if sx { return copysign(atan2_3pio4, y) }
+            return copysign(atan2_pio4, y)
+        }
+        if sx { return copysign(atan2_pi, y) }
+        return copysign(0, y)
+    }
+    if ay == math_inf { return copysign(atan2_pio2, y) }
+    if ay > ax * 1.8446744073709552e19 { return copysign(atan2_pio2, y) }   # |y/x| > 2^64
+
+    if sx {
+        let z = 0
+        if ay >= ax * 5.421010862427522e-20 { z = atan(ay / ax) }           # else |y/x| < 2^-64
+        if sy { return (z - atan2_pi_lo) - atan2_pi }
+        return atan2_pi - (z - atan2_pi_lo)
+    }
+    let z2 = atan(ay / ax)
+    if sy { return -z2 }
+    return z2
+}
+
+## ---------- asin / acos ----------
+
+const as_pio2_hi = 1.57079632679489655800e+00
+const as_pio2_lo = 6.12323399573676603587e-17
+const as_pio4_hi = 7.85398163397448278999e-01
+
+const as_p0 =  1.66666666666666657415e-01
+const as_p1 = -3.25565818622400915405e-01
+const as_p2 =  2.01212532134862925881e-01
+const as_p3 = -4.00555345006794114027e-02
+const as_p4 =  7.91534994289814532176e-04
+const as_p5 =  3.47933107596021167570e-05
+const as_q1 = -2.40339491173441421878e+00
+const as_q2 =  2.02094576023350569471e+00
+const as_q3 = -6.88283971605453293030e-01
+const as_q4 =  7.70381505559019352791e-02
+
+fn as_r(z) {
+    let p = z * (as_p0 + z * (as_p1 + z * (as_p2 + z * (as_p3 + z * (as_p4 + z * as_p5)))))
+    let q = 1 + z * (as_q1 + z * (as_q2 + z * (as_q3 + z * as_q4)))
+    return p / q
+}
+
+export fn asin(x) {
+    if x != x { return x }
+    let ax = abs(x)
+    if ax >= 1 {
+        if ax == 1 { return x * as_pio2_hi }
+        return math_nan
+    }
+    if ax < 0.5 {
+        if ax < 1.4901161193847656e-8 { return x }   # 2^-26
+        return x + x * as_r(x * x)
+    }
+    let z = (1 - ax) * 0.5
+    let s = sqrt(z)
+    let r = as_r(z)
+    let res = 0
+    if ax > 0.975 {
+        res = as_pio2_hi - (2 * (s + s * r) - as_pio2_lo)
+    } else {
+        let f = floor(s * 16777216) / 16777216       # s truncated to 24 bits, so f*f is exact
+        let c = (z - f * f) / (s + f)
+        res = as_pio4_hi - ((2 * s * r - (as_pio2_lo - 2 * c)) - (as_pio4_hi - 2 * f))
+    }
+    if x < 0 { return -res }
+    return res
+}
+
+export fn acos(x) {
+    if x != x { return x }
+    let ax = abs(x)
+    if ax >= 1 {
+        if ax > 1 { return math_nan }
+        if x < 0 { return 2 * as_pio2_hi }
+        return 0
+    }
+    if ax < 0.5 {
+        if ax < 6.938893903907228e-18 { return as_pio2_hi }   # 2^-57
+        return as_pio2_hi - (x - (as_pio2_lo - x * as_r(x * x)))
+    }
+    if x < 0 {
+        let zn = (1 + x) * 0.5
+        let sn = sqrt(zn)
+        let wn = as_r(zn) * sn - as_pio2_lo
+        return 2 * (as_pio2_hi - (sn + wn))
+    }
+    let zp = (1 - x) * 0.5
+    let sp = sqrt(zp)
+    let df = floor(sp * 16777216) / 16777216
+    let cp = (zp - df * df) / (sp + df)
+    let wp = as_r(zp) * sp + cp
+    return 2 * (df + wp)
+}
