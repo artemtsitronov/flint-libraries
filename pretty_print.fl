@@ -1,0 +1,54 @@
+#  Pretty_Print.fl is a library for the Flint programming.
+#  This library is part of the flint-libraries collection,
+#   and is made by Artem Tsitronov.
+#
+#  The Flint Programming Language is made by Soumalya Das.
+
+const DEFAULT_INDENT = 2
+
+fn pretty_lines(v) {
+    let lines = []
+
+    if type(v) == "table" {
+        print("Error at value '" + str(v) + "': it is a table, and due to Flint's limitation, it cannot be parsed")
+    }
+
+    if type(v) != "list" {
+        push(lines, str(v))
+        return lines
+    }
+    if len(v) == 0 {
+        push(lines, "[]")
+        return lines
+    }
+
+    let step = ""
+    for i in 0..DEFAULT_INDENT { step = step + " " }
+
+    push(lines, "[")
+    for item in v {
+        let sub = pretty_lines(item)
+        let last = len(sub) - 1
+        for j in 0..len(sub) {
+            let line = step + sub[j]
+            if j == last { line = line + "," }
+            push(lines, line)
+        }
+    }
+    push(lines, "]")
+    return lines
+}
+
+
+export fn pretty_output(v) {
+    let lines = pretty_lines(v)
+    let out = lines[0]
+    for j in 1..len(lines) {
+        out = out + "\n" + lines[j]
+    }
+    return out
+}
+
+export fn pretty_print(v) {
+    print(pretty_output(v))
+}

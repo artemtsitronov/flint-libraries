@@ -1,0 +1,59 @@
+import "math.fl"
+
+fn ind_print(content) {
+    print(" - " + str(content))
+}
+
+print("EXP TESTS")
+ind_print(exp(1))                      # -> 2.71828182845905
+ind_print(exp(0))                      # -> 1
+ind_print(exp(-746))                   # -> 0
+
+print("LOG TESTS")
+ind_print(log(1))                      # -> 0
+ind_print(log(2.718281828459045))      # -> 1
+ind_print(log(10))                     # -> 2.30258509299405
+ind_print(log(0.5))                    # -> -0.693147180559945
+ind_print(log(5e-324))                 # -> -744.440071921381
+ind_print(log(1e308))                  # -> 709.196208642166
+ind_print(log(0))                      # -> -inf
+ind_print(log(-1))                     # -> nan
+
+print("TRIG TESTS")
+ind_print(sin(0))                      # -> 0
+ind_print(cos(0))                      # -> 1
+ind_print(sin(1))                      # -> 0.841470984807897
+ind_print(cos(1))                      # -> 0.54030230586814
+ind_print(tan(1))                      # -> 1.5574077246549
+ind_print(sin(3.141592653589793))      # -> 1.22464679914735e-16  (NOT 0: reduction works)
+ind_print(cos(1.5707963267948966))     # -> 6.12323399573677e-17  (NOT 0: reduction works)
+ind_print(sin(100))                    # -> -0.506365641109759
+ind_print(cos(100))                    # -> 0.862318872287684
+ind_print(tan(-3))                     # -> 0.142546543074278
+ind_print(sin(1000000))                # -> -0.349993502171293
+ind_print(cos(1000000))                # -> 0.936752127533145
+ind_print(sin(10000000))               # -> nan  (above the reduction limit, on purpose)
+
+print("INVERSE TRIG TESTS")
+ind_print(atan(1))                     # -> 0.785398163397448
+ind_print(atan(0.5))                   # -> 0.463647609000806
+ind_print(atan(math_inf))              # -> 1.5707963267949
+ind_print(atan2(1, -1))                # -> 2.35619449019234
+ind_print(atan2(-1, -1))               # -> -2.35619449019234
+ind_print(atan2(0, -1))                # -> 3.14159265358979
+ind_print(asin(1))                     # -> 1.5707963267949
+ind_print(asin(0.5))                   # -> 0.523598775598299
+ind_print(asin(2))                     # -> nan
+ind_print(acos(0.5))                   # -> 1.0471975511966
+ind_print(acos(-1))                    # -> 3.14159265358979
+ind_print(acos(2))                     # -> nan
+
+print("EXACT CHECKS")
+ind_print(exp(1) == 2.718281828459045)             # -> true
+ind_print(log(10) == 2.302585092994046)            # -> true
+ind_print(sin(1) == 0.8414709848078965)            # -> true
+ind_print(cos(1) == 0.5403023058681398)            # -> true
+ind_print(tan(1) == 1.5574077246549023)            # -> true
+ind_print(atan(1) == 0.7853981633974483)           # -> true
+ind_print(asin(0.5) == 0.5235987755982989)         # -> true
+ind_print(acos(0.5) == 1.0471975511965979)         # -> true

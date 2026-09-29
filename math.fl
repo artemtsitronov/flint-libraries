@@ -1,7 +1,9 @@
-#  Math.fl is a library for the Flint programming
-#   language by Soumalya Das.
+#  Math.fl is a library for the Flint programming.
 #  This library is part of the flint-libraries collection,
 #   and is made by Artem Tsitronov.
+#
+#  The Flint Programming Language is made by Soumalya Das.
+
 
 export const floor  = __floor
 export const sqrt  = __sqrt

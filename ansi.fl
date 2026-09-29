@@ -1,0 +1,118 @@
+const ANSI_ESC = ""
+const ANSI_CSI = ANSI_ESC + "["
+
+const ANSI_RESET = ANSI_CSI + "0m"
+
+const ANSI_BOLD          = ANSI_CSI + "1m"
+const ANSI_DIM           = ANSI_CSI + "2m"
+const ANSI_ITALIC        = ANSI_CSI + "3m"
+const ANSI_UNDERLINE     = ANSI_CSI + "4m"
+const ANSI_BLINK         = ANSI_CSI + "5m"
+const ANSI_REVERSE       = ANSI_CSI + "7m"
+const ANSI_HIDDEN        = ANSI_CSI + "8m"
+const ANSI_STRIKE        = ANSI_CSI + "9m"
+const ANSI_DUNDERLINE    = ANSI_CSI + "21m"
+const ANSI_OVERLINE      = ANSI_CSI + "53m"
+
+const ANSI_NO_BOLD       = ANSI_CSI + "22m"
+const ANSI_NO_DIM        = ANSI_CSI + "22m"
+const ANSI_NO_ITALIC     = ANSI_CSI + "23m"
+const ANSI_NO_UNDERLINE  = ANSI_CSI + "24m"
+const ANSI_NO_BLINK      = ANSI_CSI + "25m"
+const ANSI_NO_REVERSE    = ANSI_CSI + "27m"
+const ANSI_NO_HIDDEN     = ANSI_CSI + "28m"
+const ANSI_NO_STRIKE     = ANSI_CSI + "29m"
+const ANSI_NO_OVERLINE   = ANSI_CSI + "55m"
+
+const ANSI_BLACK         = ANSI_CSI + "30m"
+const ANSI_RED           = ANSI_CSI + "31m"
+const ANSI_GREEN         = ANSI_CSI + "32m"
+const ANSI_YELLOW        = ANSI_CSI + "33m"
+const ANSI_BLUE          = ANSI_CSI + "34m"
+const ANSI_MAGENTA       = ANSI_CSI + "35m"
+const ANSI_CYAN          = ANSI_CSI + "36m"
+const ANSI_WHITE         = ANSI_CSI + "37m"
+const ANSI_DEFAULT_FG    = ANSI_CSI + "39m"
+
+const ANSI_BRIGHT_BLACK   = ANSI_CSI + "90m"
+const ANSI_BRIGHT_RED     = ANSI_CSI + "91m"
+const ANSI_BRIGHT_GREEN   = ANSI_CSI + "92m"
+const ANSI_BRIGHT_YELLOW  = ANSI_CSI + "93m"
+const ANSI_BRIGHT_BLUE    = ANSI_CSI + "94m"
+const ANSI_BRIGHT_MAGENTA = ANSI_CSI + "95m"
+const ANSI_BRIGHT_CYAN    = ANSI_CSI + "96m"
+const ANSI_BRIGHT_WHITE   = ANSI_CSI + "97m"
+const ANSI_GRAY           = ANSI_CSI + "90m"
+
+const ANSI_BG_BLACK      = ANSI_CSI + "40m"
+const ANSI_BG_RED        = ANSI_CSI + "41m"
+const ANSI_BG_GREEN      = ANSI_CSI + "42m"
+const ANSI_BG_YELLOW     = ANSI_CSI + "43m"
+const ANSI_BG_BLUE       = ANSI_CSI + "44m"
+const ANSI_BG_MAGENTA    = ANSI_CSI + "45m"
+const ANSI_BG_CYAN       = ANSI_CSI + "46m"
+const ANSI_BG_WHITE      = ANSI_CSI + "47m"
+const ANSI_DEFAULT_BG    = ANSI_CSI + "49m"
+
+const ANSI_BG_BRIGHT_BLACK   = ANSI_CSI + "100m"
+const ANSI_BG_BRIGHT_RED     = ANSI_CSI + "101m"
+const ANSI_BG_BRIGHT_GREEN   = ANSI_CSI + "102m"
+const ANSI_BG_BRIGHT_YELLOW  = ANSI_CSI + "103m"
+const ANSI_BG_BRIGHT_BLUE    = ANSI_CSI + "104m"
+const ANSI_BG_BRIGHT_MAGENTA = ANSI_CSI + "105m"
+const ANSI_BG_BRIGHT_CYAN    = ANSI_CSI + "106m"
+const ANSI_BG_BRIGHT_WHITE   = ANSI_CSI + "107m"
+
+const ANSI_CURSOR_HOME      = ANSI_CSI + "H"
+const ANSI_CURSOR_SAVE      = ANSI_ESC + "7"
+const ANSI_CURSOR_RESTORE   = ANSI_ESC + "8"
+const ANSI_CURSOR_HIDE      = ANSI_CSI + "?25l"
+const ANSI_CURSOR_SHOW      = ANSI_CSI + "?25h"
+const ANSI_CURSOR_UP        = ANSI_CSI + "1A"
+const ANSI_CURSOR_DOWN      = ANSI_CSI + "1B"
+const ANSI_CURSOR_RIGHT     = ANSI_CSI + "1C"
+const ANSI_CURSOR_LEFT      = ANSI_CSI + "1D"
+const ANSI_CURSOR_COL0      = ANSI_CSI + "1G"
+const ANSI_CURSOR_QUERY     = ANSI_CSI + "6n"
+
+const ANSI_CLEAR_SCREEN     = ANSI_CSI + "2J"
+const ANSI_CLEAR_BELOW      = ANSI_CSI + "0J"
+const ANSI_CLEAR_ABOVE      = ANSI_CSI + "1J"
+const ANSI_CLEAR_SCROLLBACK = ANSI_CSI + "3J"
+const ANSI_CLEAR_LINE       = ANSI_CSI + "2K"
+const ANSI_CLEAR_LINE_END   = ANSI_CSI + "0K"
+const ANSI_CLEAR_LINE_START = ANSI_CSI + "1K"
+
+const ANSI_ALT_SCREEN_ON    = ANSI_CSI + "?1049h"
+const ANSI_ALT_SCREEN_OFF   = ANSI_CSI + "?1049l"
+const ANSI_wrap_OFF         = ANSI_CSI + "?7l"
+const ANSI_wrap_ON          = ANSI_CSI + "?7h"
+
+fn ANSI_fg256(n) { return ANSI_CSI + "38;5;" + str(n) + "m" }
+fn ANSI_bg256(n) { return ANSI_CSI + "48;5;" + str(n) + "m" }
+
+fn ANSI_RGB(r, g, b) { return ANSI_CSI + "38;2;" + str(r) + ";" + str(g) + ";" + str(b) + "m" }
+fn ANSI_bg_RGB(r, g, b) { return ANSI_CSI + "48;2;" + str(r) + ";" + str(g) + ";" + str(b) + "m" }
+
+fn ANSI_up(n)    { return ANSI_CSI + str(n) + "A" }
+fn ANSI_down(n)  { return ANSI_CSI + str(n) + "B" }
+fn ANSI_right(n) { return ANSI_CSI + str(n) + "C" }
+fn ANSI_left(n)  { return ANSI_CSI + str(n) + "D" }
+
+fn ANSI_goto(row, col) { return ANSI_CSI + str(row) + ";" + str(col) + "H" }
+
+fn ANSI_wrap(s, code) { return code + s + ANSI_RESET }
+
+fn red(s)       { return ANSI_wrap(s, ANSI_RED) }
+fn green(s)     { return ANSI_wrap(s, ANSI_GREEN) }
+fn yellow(s)    { return ANSI_wrap(s, ANSI_YELLOW) }
+fn blue(s)      { return ANSI_wrap(s, ANSI_BLUE) }
+fn magenta(s)   { return ANSI_wrap(s, ANSI_MAGENTA) }
+fn cyan(s)      { return ANSI_wrap(s, ANSI_CYAN) }
+fn white(s)     { return ANSI_wrap(s, ANSI_WHITE) }
+fn gray(s)      { return ANSI_wrap(s, ANSI_GRAY) }
+fn bold(s)      { return ANSI_wrap(s, ANSI_BOLD) }
+fn dim(s)       { return ANSI_wrap(s, ANSI_DIM) }
+fn italic(s)    { return ANSI_wrap(s, ANSI_ITALIC) }
+fn underline(s) { return ANSI_wrap(s, ANSI_UNDERLINE) }
+fn strike(s)    { return ANSI_wrap(s, ANSI_STRIKE) }

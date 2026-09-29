@@ -1,0 +1,12 @@
+import "pretty_print.fl"
+
+let example = ["Wow", [0, 9, false, ["hi", -5], true], "list"]
+pretty_print(example)
+
+let another_example = {
+    i: false,
+    h: true,
+    text: [ 6, 7, 6, 7, 8, 3 ],
+    hello: [ { a: false, b: [3, 4] }, 7, 9 ]
+}
+pretty_print(another_example)
